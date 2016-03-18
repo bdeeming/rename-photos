@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+
+import os
+import argparse
+import re
+from datetime import datetime
+from PIL import Image
+from PIL.ExifTags import TAGS
+
+
+def get_exif_time(filename):
+    img = Image.open(filename)
+    
+    if img._getexif() is None:
+        return None
+    exif = {TAGS.get(tag, tag):value for tag,value in img._getexif().items()}
+
+    return datetime.strptime(exif['DateTimeOriginal'], '%Y:%m:%d %H:%M:%S')  \
+           if exif['DateTimeOriginal'] is not None  \
+           else None
+
+
+# TODO Unix creation time might not be what is wanted... partion list by exif/no-exif then sort sep??
+def get_os_time(filename):
+    return datetime.fromtimestamp(os.path.getctime(filename))
+
+
+def get_file_timestamp(filename):
+    '''In order of precedence, get 'DateTimeOriginal' or file creation time (filesystem)'''
+    exif_time = get_exif_time(filename)
+
+    return exif_time if exif_time is not None else get_os_time(filename)
+
+
+# TODO Do a pre-rename first to prevent overwriting files
+def rename_all_files(dir, tag, date):
+    file_list = sorted(os.listdir(dir), key=get_file_timestamp)
+    for file,i in zip(file_list, range(1, len(file_list) + 1)):
+        new_filename = '{:03}_{}_{}.jpeg'.format(i, tag, date)
+        os.rename(file, new_filename)
+        print(file, '->', new_filename)
+
+
+def date_string(input):
+    if re.match('^20\d\d-[01]\d-[03]\d$', input):
+        return input
+    else:
+        raise argparse.ArgumentError()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Rename files in a directory to the format XXX_tag_date')
+    parser.add_argument('tag', help='Tag to include in all file names')
+    parser.add_argument('date', type=date_string, help='The date to append to all file names. Format: YYYY-MM-DD')
+    parser.add_argument('directory', help='The directory containing the files to rename')
+    args = parser.parse_args()
+
+    rename_all_files(args.directory, args.tag, args.date)
+
