@@ -20,15 +20,21 @@ def get_exif_time(filename):
            else ''
 
 
-# TODO Do a pre-rename first to prevent overwriting files
 def rename_all_files(dir, tag, date):
     predicate = lambda filename: (get_exif_time(filename), filename)
     file_list = sorted(os.listdir(dir), key=predicate)
 
-    for file,i in zip(file_list, range(1, len(file_list) + 1)):
-        new_filename = '{:03}_{}_{}.jpeg'.format(i, tag, date)
-        os.rename(file, new_filename)
-        print('{} -> {} [{}]'.format(file, new_filename, get_exif_time(new_filename)))
+    file_map = [(file, '{:03}_{}_{}.jpeg'.format(i, tag, date))  \
+                for file,i in zip(file_list, range(1, len(file_list) + 1))]
+
+    # Rename to prevent name clashes first 
+    for old,new in file_map:
+        print('{} -> {} [{}]'.format(old, new, get_exif_time(old)))
+        os.rename(old, old + '.tmp')
+
+    # Final rename
+    for old,new in file_map:
+        os.rename(old + '.tmp', new)
 
 
 def date_string(input):
@@ -38,6 +44,7 @@ def date_string(input):
         raise argparse.ArgumentError()
 
 
+# TODO Override date with exif date
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Rename files in a directory to the format XXX_tag_date')
     parser.add_argument('tag', help='Tag to include in all file names')
