@@ -12,33 +12,23 @@ def get_exif_time(filename):
     img = Image.open(filename)
     
     if img._getexif() is None:
-        return None
+        return ''
     exif = {TAGS.get(tag, tag):value for tag,value in img._getexif().items()}
 
-    return datetime.strptime(exif['DateTimeOriginal'], '%Y:%m:%d %H:%M:%S')  \
+    return exif['DateTimeOriginal']  \
            if exif['DateTimeOriginal'] is not None  \
-           else None
-
-
-# TODO Unix creation time might not be what is wanted... partion list by exif/no-exif then sort sep??
-def get_os_time(filename):
-    return datetime.fromtimestamp(os.path.getctime(filename))
-
-
-def get_file_timestamp(filename):
-    '''In order of precedence, get 'DateTimeOriginal' or file creation time (filesystem)'''
-    exif_time = get_exif_time(filename)
-
-    return exif_time if exif_time is not None else get_os_time(filename)
+           else ''
 
 
 # TODO Do a pre-rename first to prevent overwriting files
 def rename_all_files(dir, tag, date):
-    file_list = sorted(os.listdir(dir), key=get_file_timestamp)
+    predicate = lambda filename: (get_exif_time(filename), filename)
+    file_list = sorted(os.listdir(dir), key=predicate)
+
     for file,i in zip(file_list, range(1, len(file_list) + 1)):
         new_filename = '{:03}_{}_{}.jpeg'.format(i, tag, date)
         os.rename(file, new_filename)
-        print(file, '->', new_filename)
+        print('{} -> {} [{}]'.format(file, new_filename, get_exif_time(new_filename)))
 
 
 def date_string(input):
