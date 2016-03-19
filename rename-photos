@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import glob
 import argparse
 import re
 from datetime import datetime
@@ -20,16 +21,19 @@ def get_exif_time(filename):
            else ''
 
 
-def rename_all_files(dir, tag, date):
+def rename_all_images(dir, tag, date):
     predicate = lambda filename: (get_exif_time(filename), filename)
-    file_list = sorted(os.listdir(dir), key=predicate)
+    file_list = sorted(glob.glob('*.jpg') + 
+                       glob.glob('*.JPG') + 
+                       glob.glob('*.jpeg') + 
+                       glob.glob('*.JPEG'), key=predicate)
 
     file_map = [(file, 
-                 '{:03}_{}_{:%Y-%m-%d}.jpeg'.format(i, 
-                                                    tag, 
-                                                    datetime.strptime(get_exif_time(file), '%Y:%m:%d %H:%M:%S')  \
-                                                        if get_exif_time(file)  \
-                                                        else date)
+                 '{:03}_{}_{:%Y-%m-%d}.jpg'.format(i, 
+                                                   tag, 
+                                                   datetime.strptime(get_exif_time(file), '%Y:%m:%d %H:%M:%S')  \
+                                                       if get_exif_time(file)  \
+                                                       else date)
                 )  \
                 for file,i in zip(file_list, range(1, len(file_list) + 1))]
 
@@ -58,5 +62,5 @@ if __name__ == '__main__':
     # parser.add_argument('directory', help='The directory containing the files to rename')
     args = parser.parse_args()
 
-    rename_all_files('.', args.tag, args.date)
+    rename_all_images('.', args.tag, args.date)
 
