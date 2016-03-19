@@ -54,8 +54,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Rename files in a directory to the format XXX_tag_date')
     parser.add_argument('tag', help='Tag to include in all file names')
     parser.add_argument('date', type=date_string, help='The date to append to all file names. Format: YYYY-MM-DD')
-    parser.add_argument('directory', help='The directory containing the files to rename')
+    # TODO Make paths relative to 'directory'
+    # parser.add_argument('directory', help='The directory containing the files to rename')
     args = parser.parse_args()
 
-    rename_all_files(args.directory, args.tag, args.date)
+    rename_all_files('.', args.tag, args.date)
 
